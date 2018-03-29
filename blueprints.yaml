@@ -1,0 +1,84 @@
+name: Proxy Authentication
+version: 0.0.1
+description: Authenticate users based on headers set by upstream proxy servers.
+icon: sign-in
+author:
+  name: Ilya Kogan
+  email: ikogan@mythicnet.org
+keywords: login, authentication
+license: DBAD
+
+dependencies:
+  - login
+  - form
+
+form:
+  validation: strict
+  fields:
+    enabled:
+      type: toggle
+      label: PLUGIN_ADMIN.PLUGIN_STATUS
+      highlight: 1
+      default: 0
+      options:
+        1: PLUGIN_ADMIN.ENABLED
+        0: PLUGIN_ADMIN.DISABLED
+      validate:
+        type: bool
+
+    headers.username:
+      type: text
+      size: medium
+      label: Username header
+      default: 'X-Remote-User'
+
+    headers.displayName:
+      type: text
+      size: medium
+      label: User display name header
+      default: 'X-Remote-Display-Name'
+
+    headers.email:
+      type: text
+      size: medium
+      label: User e-mail address header
+      default: 'X-Remote-Email'
+
+    headers.groups:
+      type: text
+      size: medium
+      label: User group memberships header
+      default: 'X-Remote-Groups'
+
+    groupSeparator:
+      type: text
+      size: small
+      label: Groups separator character
+      default: ','
+
+    required.groups:
+      type: selectize
+      size: large
+      label: Required Groups
+      classes: fancy
+      help: Groups a user must have in order to get site access.
+      validate:
+        type: commalist
+
+    url.login:
+      type: text
+      size: large
+      label: Login URL
+      help: |
+        URL to send users to when they need to login. Note
+        ${CURRENT_URL} will be replaced with the URL user's are
+        currently visiting.
+
+    url.logout:
+      type: text
+      size: large
+      label: Logout URL
+      help: |
+        URL to send users to when they need to logout. Note
+        ${CURRENT_URL} will be replaced with the URL user's are
+        currently visiting.
