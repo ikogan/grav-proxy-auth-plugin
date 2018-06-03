@@ -47,7 +47,7 @@ sent by the proxy should be the external hostname of
 the site or the correct hostname should be configured
 in Grav's settings.
 
-Also, the group separate currently simply uses PHP's
+Also, the group header currently simply uses PHP's
 `explode` function and therefore does not support
 quoting. Hopefully this will be implemented in the
 future.
@@ -82,20 +82,15 @@ This plugin is brand new and has not been extensively
 tested with all of the various functionality that
 the login plugin provides. Namely, the following:
 
-- No events are fired or caught by this module. This
-  may mean that plugins relying on events related to
-  user authentication may not work.
+- Only the `userLogout` event is caught by this plugin and none
+  are fired. This ay mean that plugins relying on events related to
+  user authentication may not work properly.
 - User registration is not supported since that is
   expected to be handled by an external system.
 - Users are not saved to disk. This means they cannot
   be edited and their profile cannot be viewed.
-- Login/Logout URL handling is not yet completed. Only
-  the options exist; they currently do nothing.
 - Like registration, forgotten password and any
   related functionality is not supported.
-- Until logout handling is implemented, the "Logout"
-  button in the admin plugin will likely not do
-  anything useful.
 - The behavior of the plugin when a user exists in
   both the external system as well as in Grav itself
   is currently undefined.
@@ -103,15 +98,11 @@ the login plugin provides. Namely, the following:
   work and will likely break horribly.
 - Standard limitations of HTTP header sizes and values
   apply.
+- Only admin access control has been tested so far and even
+  that, somewhat barely.
 
 ## Todo
 
-- Implement login/logout handling. Redirect users to
-  login link when they are not authenticated in admin
-  and mirror whatever behavior the login module uses
-  for the rest of Grav. Manipulate the "Logout" link
-  in admin to logout of both Grav and the admin
-  module.
 - Try to disable bits of the "login" module that
   do not make sense in this context or simply remove
   the dependency on the module if possible.

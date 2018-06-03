@@ -13,7 +13,8 @@ use Grav\Common\Debugger;
 class ProxyAuthplugin extends Plugin {
     public static function getSubscribedEvents() {
         return [
-            'onPageInitialized' => ['checkAuthentication', 1],
+            'onPageInitialized'         => ['checkAuthentication', 1],
+            'onUserLogout'              => ['userLogout', 1]
         ];
     }
 
@@ -29,6 +30,26 @@ class ProxyAuthplugin extends Plugin {
         $this -> grav['debugger'] -> addMessage($message, 'debug');
     }
 
+    public function getLoginUrl() {
+        $url = $this -> config -> get('plugins.proxy-auth.url.login', NULL);
+
+        if(!empty($url)) {
+            $url = str_replace('${CURRENT_URL}', $this -> grav['uri'], $url);
+        }
+
+        return $url;
+    }
+
+    public function getLogoutUrl($redirectUrl = NULL) {
+        $url = $this -> config -> get('plugins.proxy-auth.url.logout', NULL);
+
+        if(!empty($url)) {
+            $url = str_replace('${CURRENT_URL}', $this -> grav['uri'], $url);
+        }
+
+        return $url;
+    }
+
     public function checkAuthentication() {
         $user = $this -> grav['user'];
 
@@ -39,15 +60,26 @@ class ProxyAuthplugin extends Plugin {
         $user = $this -> extractFromHeaders();
 
         if(!empty($user)) {
-            $this -> grav['debugger'] -> addMessage($user, 'debug', false); 
+            $this -> grav['debugger'] -> addMessage($user, 'debug', false);
             $this -> authenticate($user);
+        } else if($this -> isAdmin()) {
+            $loginUrl = $this -> getLoginUrl();
+
+            if(!empty($loginUrl)) {
+                $this -> debug("No user authenticated but we're in admin so forcing authentication through " . $loginUrl);
+                $this -> grav -> redirectLangSafe($loginUrl);
+            }
         } else {
-            $this -> debug('No user authenticated by proxy.');    
+            $this -> debug('No user authenticated by proxy.');
         }
     }
 
+    public function extractUsernameFromHeaders() {
+        return self::getHeader($this -> config -> get('plugins.proxy-auth.headers.username', 'X-Remote-User'));
+    }
+
     public function extractFromHeaders() {
-        $username = self::getHeader($this -> config -> get('plugins.proxy-auth.headers.username', 'X-Remote-User'));
+        $username = $this -> extractUsernameFromHeaders();
 
         if(empty($username)) {
             return NULL;
@@ -62,7 +94,7 @@ class ProxyAuthplugin extends Plugin {
             $this -> debug('User requires groups ' . implode(',', $required));
 
             if(empty($groups) || empty(array_intersect($groups, $required))) {
-                $this -> Debug('User not authorized.');
+                $this -> debug('User not authorized.');
                 return NULL;
             }
         }
@@ -96,5 +128,16 @@ class ProxyAuthplugin extends Plugin {
         $this -> grav['session'] -> user = $user;
         unset($this -> grav['user']);
         $this -> grav['user'] = $user;
+    }
+
+    public function userLogout() {
+        $this -> debug('userLogout called');
+
+        $logoutUrl = $this -> getLogoutUrl();
+
+        if(!empty($logoutUrl) && !empty($this -> extractUsernameFromHeaders())) {
+            $this -> grav -> redirectLangSafe($logoutUrl);
+            $this -> grav -> shutdown();
+        }
     }
 }
