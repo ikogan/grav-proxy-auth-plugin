@@ -13,6 +13,7 @@ use Grav\Common\Debugger;
 class ProxyAuthplugin extends Plugin {
     public static function getSubscribedEvents() {
         return [
+            'onTwigSiteVariables'       => ['twigSiteVariables', 0],
             'onPageInitialized'         => ['checkAuthentication', 1],
             'onUserLogout'              => ['userLogout', 1]
         ];
@@ -50,6 +51,10 @@ class ProxyAuthplugin extends Plugin {
         return $url;
     }
 
+    public function twigSiteVariables() {
+        $this -> grav['twig'] -> login_url = $this -> getLoginUrl();
+    }
+
     public function checkAuthentication() {
         $user = $this -> grav['user'];
 
@@ -62,7 +67,7 @@ class ProxyAuthplugin extends Plugin {
         if(!empty($user)) {
             $this -> grav['debugger'] -> addMessage($user, 'debug', false);
             $this -> authenticate($user);
-        } else if($this -> isAdmin()) {
+        } else if($this -> grav['page'] -> header('access')) {
             $loginUrl = $this -> getLoginUrl();
 
             if(!empty($loginUrl)) {
@@ -89,7 +94,7 @@ class ProxyAuthplugin extends Plugin {
         $required = $this -> config -> get('plugins.proxy-auth.required.groups', NULL);
 
         $groups = explode($groupSeparator, self::getHeader($this -> config -> get('plugins.proxy-auth.headers.groups', 'X-Remote-Groups')));
-            
+
         if(!empty($required)) {
             $this -> debug('User requires groups ' . implode(',', $required));
 
@@ -131,8 +136,6 @@ class ProxyAuthplugin extends Plugin {
     }
 
     public function userLogout() {
-        $this -> debug('userLogout called');
-
         $logoutUrl = $this -> getLogoutUrl();
 
         if(!empty($logoutUrl) && !empty($this -> extractUsernameFromHeaders())) {
