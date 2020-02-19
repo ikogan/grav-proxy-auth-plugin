@@ -15,6 +15,7 @@ class ProxyAuthplugin extends Plugin {
         return [
             'onTwigSiteVariables'       => ['twigSiteVariables', 0],
             'onPluginsInitialized'      => ['checkAuthentication', 10000],
+            'onPageInitialized'         => ['checkAuthentication', 1],
             'onUserLogout'              => ['userLogout', 1]
         ];
     }
