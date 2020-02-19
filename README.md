@@ -76,6 +76,11 @@ that access. This will likely be removed in the future
 in favor of explicitly granting `site.login` to
 groups.
 
+You may have to modify your theme a bit to get
+login/logout working. This plugin will set the `logout_url`
+twig variable that you can use to get the correct URL
+with which to logout.
+
 ## Caveats
 
 This plugin is brand new and has not been extensively
@@ -98,14 +103,9 @@ the login plugin provides. Namely, the following:
   work and will likely break horribly.
 - Standard limitations of HTTP header sizes and values
   apply.
-- Only admin access control has been tested so far and even
-  that, somewhat barely.
 
 ## Todo
 
-- Try to disable bits of the "login" module that
-  do not make sense in this context or simply remove
-  the dependency on the module if possible.
 - Support displaying (but not editing) user profile
   information, overriding the admin module's default
   behavior.

@@ -13,7 +13,8 @@ use Grav\Common\Debugger;
 class ProxyAuthplugin extends Plugin {
     public static function getSubscribedEvents() {
         return [
-            'onPageInitialized'         => ['checkAuthentication', 1],
+            'onTwigSiteVariables'       => ['twigSiteVariables', 0],
+            'onPluginsInitialized'      => ['checkAuthentication', 10000],
             'onUserLogout'              => ['userLogout', 1]
         ];
     }
@@ -50,7 +51,13 @@ class ProxyAuthplugin extends Plugin {
         return $url;
     }
 
+    public function twigSiteVariables() {
+        $this -> grav['twig'] -> login_url = $this -> getLoginUrl();
+    }
+
     public function checkAuthentication() {
+        $this -> debug('Checking for user authentication...');
+
         $user = $this -> grav['user'];
 
         if($user -> authenticated) {
@@ -62,7 +69,7 @@ class ProxyAuthplugin extends Plugin {
         if(!empty($user)) {
             $this -> grav['debugger'] -> addMessage($user, 'debug', false);
             $this -> authenticate($user);
-        } else if($this -> isAdmin()) {
+        } else if($this -> grav['page'] -> header('access')) {
             $loginUrl = $this -> getLoginUrl();
 
             if(!empty($loginUrl)) {
@@ -85,11 +92,13 @@ class ProxyAuthplugin extends Plugin {
             return NULL;
         }
 
+        $this -> debug('Proxy authenticated user is ' . $username . '. Loading user details...');
+
         $groupSeparator = $this -> config -> get('plugins.proxy-auth.groupSeparator' , ',');
         $required = $this -> config -> get('plugins.proxy-auth.required.groups', NULL);
 
         $groups = explode($groupSeparator, self::getHeader($this -> config -> get('plugins.proxy-auth.headers.groups', 'X-Remote-Groups')));
-            
+
         if(!empty($required)) {
             $this -> debug('User requires groups ' . implode(',', $required));
 
@@ -102,7 +111,6 @@ class ProxyAuthplugin extends Plugin {
         $user = array(
             'username' => $username,
             'language' => 'en',
-            'authenticated' => true,
             'access' => array('site' => array('login' => 'true'))
         );
 
@@ -121,7 +129,10 @@ class ProxyAuthplugin extends Plugin {
             $user['groups'] = $groups;
         }
 
-        return new User($user);
+        $user = new User($user);
+        $user -> authenticated = true;
+
+        return $user;
     }
 
     public function authenticate($user) {
@@ -131,8 +142,6 @@ class ProxyAuthplugin extends Plugin {
     }
 
     public function userLogout() {
-        $this -> debug('userLogout called');
-
         $logoutUrl = $this -> getLogoutUrl();
 
         if(!empty($logoutUrl) && !empty($this -> extractUsernameFromHeaders())) {
