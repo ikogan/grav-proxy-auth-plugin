@@ -5,6 +5,7 @@ use Grav\Common\Config;
 use Grav\Common\Grav;
 use Grav\Common\Plugin;
 use Grav\Common\User\User;
+use Grav\Common\Utils;
 
 use Grav\Plugin\Login;
 
@@ -15,7 +16,6 @@ class ProxyAuthplugin extends Plugin {
         return [
             'onTwigSiteVariables'       => ['twigSiteVariables', 0],
             'onPluginsInitialized'      => ['checkAuthentication', 10000],
-            'onPageInitialized'         => ['checkAuthentication', 1],
             'onUserLogout'              => ['userLogout', 1]
         ];
     }
@@ -36,7 +36,7 @@ class ProxyAuthplugin extends Plugin {
         $url = $this -> config -> get('plugins.proxy-auth.url.login', NULL);
 
         if(!empty($url)) {
-            $url = str_replace('${CURRENT_URL}', $this -> grav['uri'], $url);
+            $url = str_replace('${CURRENT_URL}', $this -> grav['uri'] -> url, $url);
         }
 
         return $url;
@@ -46,7 +46,7 @@ class ProxyAuthplugin extends Plugin {
         $url = $this -> config -> get('plugins.proxy-auth.url.logout', NULL);
 
         if(!empty($url)) {
-            $url = str_replace('${CURRENT_URL}', $this -> grav['uri'], $url);
+            $url = str_replace('${CURRENT_URL}', $this -> grav['uri'] -> url, $url);
         }
 
         return $url;
@@ -66,19 +66,32 @@ class ProxyAuthplugin extends Plugin {
         }
 
         $user = $this -> extractFromHeaders();
+        $uri = $this -> grav['uri'];
+        $loginUrl = $this -> getLoginUrl();
+        $onLoginUrl = $uri -> path() == parse_url($loginUrl)['path'];
 
         if(!empty($user)) {
             $this -> grav['debugger'] -> addMessage($user, 'debug', false);
             $this -> authenticate($user);
-        } else if($this -> grav['page'] -> header('access')) {
-            $loginUrl = $this -> getLoginUrl();
-
+        } else if(Utils::startsWith($uri -> path(), '/admin', false) && !$onLoginUrl) {
             if(!empty($loginUrl)) {
                 $this -> debug("No user authenticated but we're in admin so forcing authentication through " . $loginUrl);
                 $this -> grav -> redirectLangSafe($loginUrl);
             }
         } else {
             $this -> debug('No user authenticated by proxy.');
+        }
+
+        if($onLoginUrl) {
+            $this -> debug('Landed at login URL. Trying to redirect.');
+
+            $redirectUrl = $uri -> query('redirect');
+
+            if(strlen(trim($redirectUrl)) != 0) {
+                $this -> grav -> redirectLangSafe($redirectUrl);
+            } else {
+                $this -> grav -> redirectLangSafe("/");
+            }
         }
     }
 
