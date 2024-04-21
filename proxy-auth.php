@@ -20,12 +20,18 @@ class ProxyAuthplugin extends Plugin {
         ];
     }
 
-    public static function getHeader($key) {
+    public static function getHeader($key, $default=NULL) {
         if(empty($key)) {
-            return NULL;
+            return $default;
         }
 
-        return $_SERVER['HTTP_' . strtoupper(str_replace('-', '_', $key))];
+        $key = 'HTTP_' . strtoupper(str_replace('-', '_', $key));
+
+        if(array_key_exists($key, $_SERVER)) {
+            return $_SERVER[$key];
+        }
+
+        return $default;
     }
 
     public function debug($message) {
@@ -111,7 +117,7 @@ class ProxyAuthplugin extends Plugin {
         $groupSeparator = $this -> config -> get('plugins.proxy-auth.groupSeparator' , ',');
         $required = $this -> config -> get('plugins.proxy-auth.required.groups', NULL);
 
-        $groups = explode($groupSeparator, self::getHeader($this -> config -> get('plugins.proxy-auth.headers.groups', 'X-Remote-Groups')));
+        $groups = explode($groupSeparator, self::getHeader($this -> config -> get('plugins.proxy-auth.headers.groups', 'X-Remote-Groups'), ""));
 
         if(!empty($required)) {
             $this -> debug('User requires groups ' . implode(',', $required));
